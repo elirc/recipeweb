@@ -82,3 +82,7 @@ Pinoy, Foxy Folksy, Hungry Huy, Vicky Pham, RecipeTin Eats, Delightful Plate,
 The Woks of Life, Hot Thai Kitchen, Thai Caliente, Spain on a Fork, Spanish
 Sabores, and others. This app stores only ingredient lists and links; visit the
 source pages for instructions and support the creators.
+
+## Junior SWE learning course
+
+[Start the detailed Astra upskilling course](astraupskill/README.md): React state ownership, storage validation and accessible controls, with a codebase map, worked implementation, executable examples, debugging labs, exercises and solution discussions.

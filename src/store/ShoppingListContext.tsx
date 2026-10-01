@@ -10,17 +10,15 @@ import {
 import { RECIPES } from '../data/recipes';
 import type { Recipe } from '../types';
 
-interface ShoppingListState {
-  /** slugs of recipes added to the shopping list */
-  recipeSlugs: string[];
-  /** keys of checked-off ingredients: `${slug}:${index}` */
-  checked: Record<string, boolean>;
-}
+import { normalizeShoppingState, type ShoppingListState } from './shoppingState';
 
 interface ShoppingListContextValue {
   recipes: Recipe[];
   recipeSlugs: string[];
   checked: Record<string, boolean>;
+  quantities: Record<string, string>;
+  setQuantity: (key: string, value: string) => void;
+  storageError: boolean;
   isInList: (slug: string) => boolean;
   addRecipe: (slug: string) => void;
   removeRecipe: (slug: string) => void;
@@ -35,34 +33,22 @@ const STORAGE_KEY = 'recipeweb.shoppingList.v1';
 
 function loadState(): ShoppingListState {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as ShoppingListState;
-      if (Array.isArray(parsed.recipeSlugs) && typeof parsed.checked === 'object') {
-        return {
-          recipeSlugs: parsed.recipeSlugs.filter((s) =>
-            RECIPES.some((r) => r.slug === s),
-          ),
-          checked: parsed.checked ?? {},
-        };
-      }
-    }
-  } catch {
-    // ignore corrupted storage
-  }
-  return { recipeSlugs: [], checked: {} };
+    return normalizeShoppingState(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? 'null'), RECIPES);
+  } catch { return normalizeShoppingState(null, RECIPES); }
 }
 
 const ShoppingListContext = createContext<ShoppingListContextValue | null>(null);
 
 export function ShoppingListProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ShoppingListState>(loadState);
+  const [storageError, setStorageError] = useState(false);
 
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      setStorageError(false);
     } catch {
-      // storage unavailable (private mode etc.) — keep in memory only
+      setStorageError(true); // Keep the current session usable; disclose persistence failure.
     }
   }, [state]);
 
@@ -76,6 +62,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
 
   const removeRecipe = useCallback((slug: string) => {
     setState((s) => ({
+      quantities: Object.fromEntries(Object.entries(s.quantities).filter(([key]) => !key.startsWith(`${slug}:`))),
       recipeSlugs: s.recipeSlugs.filter((x) => x !== slug),
       checked: Object.fromEntries(
         Object.entries(s.checked).filter(([k]) => !k.startsWith(`${slug}:`)),
@@ -88,6 +75,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       setState((s) =>
         s.recipeSlugs.includes(slug)
           ? {
+              quantities: Object.fromEntries(Object.entries(s.quantities).filter(([key]) => !key.startsWith(`${slug}:`))),
               recipeSlugs: s.recipeSlugs.filter((x) => x !== slug),
               checked: Object.fromEntries(
                 Object.entries(s.checked).filter(
@@ -108,12 +96,17 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const setQuantity = useCallback((key: string, value: string) => {
+    if (value.length > 100) return;
+    setState((s) => normalizeShoppingState({ ...s, quantities: { ...s.quantities, [key]: value } }, RECIPES));
+  }, []);
+
   const clearChecked = useCallback(() => {
     setState((s) => ({ ...s, checked: {} }));
   }, []);
 
   const clearAll = useCallback(() => {
-    setState({ recipeSlugs: [], checked: {} });
+    setState({ recipeSlugs: [], checked: {}, quantities: {} });
   }, []);
 
   const value = useMemo<ShoppingListContextValue>(() => {
@@ -124,6 +117,9 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       recipes,
       recipeSlugs: state.recipeSlugs,
       checked: state.checked,
+      quantities: state.quantities,
+      setQuantity,
+      storageError,
       isInList: (slug: string) => state.recipeSlugs.includes(slug),
       addRecipe,
       removeRecipe,
@@ -133,7 +129,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       clearAll,
       count: state.recipeSlugs.length,
     };
-  }, [state, addRecipe, removeRecipe, toggleRecipe, toggleChecked, clearChecked, clearAll]);
+  }, [state, setQuantity, storageError, addRecipe, removeRecipe, toggleRecipe, toggleChecked, clearChecked, clearAll]);
 
   return (
     <ShoppingListContext.Provider value={value}>

@@ -5,13 +5,14 @@ interface Props {
   ingredients: Ingredient[];
   checked: Record<string, boolean>;
   onToggle: (key: string) => void;
+  onQuantityChange?: (key: string, value: string) => void;
 }
 
 /**
  * Renders a checkable ingredient list, preserving the source recipe's
  * ingredient groups (e.g. "Marinade", "Nuoc cham").
  */
-export default function IngredientChecklist({ slug, ingredients, checked, onToggle }: Props) {
+export default function IngredientChecklist({ slug, ingredients, checked, onToggle, onQuantityChange }: Props) {
   // Preserve original order while grouping consecutive items.
   const sections: { group: string | null; items: { ing: Ingredient; index: number }[] }[] = [];
   ingredients.forEach((ing, index) => {
@@ -48,6 +49,13 @@ export default function IngredientChecklist({ slug, ingredients, checked, onTogg
                       {ing.item}
                     </span>
                   </button>
+                  {onQuantityChange && (
+                    <label className="quantity-control">
+                      <span>Quantity for {ing.item}</span>
+                      <input type="text" maxLength={100} value={ing.quantity}
+                        onChange={(event) => onQuantityChange(key, event.target.value)} />
+                    </label>
+                  )}
                 </li>
               );
             })}

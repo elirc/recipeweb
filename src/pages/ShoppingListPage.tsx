@@ -1,15 +1,16 @@
+import { ingredientsWithQuantities } from '../store/shoppingState';
 import { Link } from 'react-router-dom';
 import { useShoppingList } from '../store/ShoppingListContext';
 import IngredientChecklist, { ingredientsToText } from '../components/IngredientChecklist';
 import { useCopy } from '../hooks/useCopy';
 
 export default function ShoppingListPage() {
-  const { recipes, checked, toggleChecked, removeRecipe, clearChecked, clearAll } =
+  const { recipes, checked, quantities, setQuantity, storageError, toggleChecked, removeRecipe, clearChecked, clearAll } =
     useShoppingList();
   const [copied, copy] = useCopy();
 
   const fullListText = () =>
-    recipes.map((r) => ingredientsToText(r.name, r.ingredients)).join('\n\n');
+    recipes.map((r) => ingredientsToText(r.name, ingredientsWithQuantities(r, quantities))).join('\n\n');
 
   if (recipes.length === 0) {
     return (
@@ -41,6 +42,7 @@ export default function ShoppingListPage() {
           items off as you go — your progress is saved on this device.
         </p>
 
+        {storageError && <p role="alert">Changes are available in this tab but could not be saved on this device.</p>}
         <div className="shopping-toolbar">
           <button className="btn btn-primary" onClick={() => copy(fullListText())}>
             {copied ? 'Copied!' : 'Copy entire list'}
@@ -73,7 +75,7 @@ export default function ShoppingListPage() {
                       </a>
                     </p>
                   </div>
-                  <button className="remove-btn" onClick={() => removeRecipe(recipe.slug)}>
+                  <button className="remove-btn" aria-label={`Remove ${recipe.name} from shopping list`} onClick={() => removeRecipe(recipe.slug)}>
                     Remove
                   </button>
                 </div>
@@ -84,7 +86,8 @@ export default function ShoppingListPage() {
                 )}
                 <IngredientChecklist
                   slug={recipe.slug}
-                  ingredients={recipe.ingredients}
+                  ingredients={ingredientsWithQuantities(recipe, quantities)}
+                  onQuantityChange={setQuantity}
                   checked={checked}
                   onToggle={toggleChecked}
                 />

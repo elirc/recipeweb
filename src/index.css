@@ -728,3 +728,7 @@ button {
     transform: translate(-50%, 0);
   }
 }
+
+.quantity-control { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .25rem 0 1rem 2rem; font-size: .85rem; }
+.quantity-control input { max-width: 14rem; padding: .45rem; border: 1px solid currentColor; border-radius: .3rem; font: inherit; }
+.quantity-control input:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
