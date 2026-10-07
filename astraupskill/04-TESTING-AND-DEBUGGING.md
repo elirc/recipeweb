@@ -44,6 +44,12 @@ Avoid changing several layers at once when you do not yet know where the failure
 
 “Expected 3, received 4” is evidence about one observation, not a complete diagnosis. Ask whether the fixture created an extra record, the operation ran twice, an old record survived, or the assertion looked at an unfiltered collection. Start from the state table and trace the first point where the actual value diverges. A stack trace identifies where the program noticed a problem, which may be later than the code that caused it.
 
+## What the suite does not cover
+
+The four tests in `test/shopping-state.test.ts` exercise only `normalizeShoppingState` and `ingredientsWithQuantities`. Nothing tests: the React store actions in `src/store/ShoppingListContext.tsx` (add/remove/toggle, the persistence effect and `storageError`), the grouping logic and `ingredientsToText` in `src/components/IngredientChecklist.tsx:17-25`, `:70-81`, the search/filter in `src/pages/HomePage.tsx:18-38`, the clipboard fallback in `src/hooks/useCopy.ts`, or the generator's validation in `scripts/generate-recipes.mjs`. There is no component-test runner in `package.json`.
+
+**Goal:** add the cheapest missing test. **Check:** a new case asserts `ingredientsToText('Soup', [{group:'Broth',quantity:'1 cup',item:'water'},{group:null,quantity:'',item:'salt'}])` equals `'SOUP\n\nBroth:\n- 1 cup water\n- salt'` and passes under `npm test` — then work out by reading `IngredientChecklist.tsx:73-79` why the ungrouped `salt` line gets no heading.
+
 ## Verification record
 
 The companion [VERIFICATION.md](VERIFICATION.md) records checks actually run for this implementation. Record your own command, date, result and any environmental prerequisite when practicing. A passing test does not imply every route, browser, dependency version or production deployment has been exercised.

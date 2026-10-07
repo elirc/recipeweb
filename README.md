@@ -30,8 +30,10 @@ Then open the URL Vite prints (usually http://localhost:5173).
 ## Build for production
 
 ```bash
-npm run build     # outputs a static site to dist/
+npm run build     # tsc -b, then vite build → static site in dist/
 npm run preview   # serve the production build locally
+npm run lint      # oxlint
+npm test          # tsx --test test/*.test.ts (4 tests for src/store/shoppingState.ts)
 ```
 
 The build uses relative asset paths and hash-based routing, so `dist/` works on
@@ -56,13 +58,27 @@ src/
   types.ts                      # Recipe / Ingredient types
   data/recipes.ts               # generated recipe data (74 recipes)
   store/ShoppingListContext.tsx # shopping list state + localStorage persistence
+  store/shoppingState.ts        # pure normalizer for stored state + quantity overrides
+  hooks/useCopy.ts              # clipboard copy with a transient "Copied!" flag
   components/                   # RecipeCard, IngredientChecklist
   pages/                        # Home (browse), Recipe detail, Shopping list
 scripts/
   filipino.json, vietnamese.json,  # researched recipe source data
-  thai.json, spanish.json          # (one file per cuisine)
-  generate-recipes.mjs             # regenerates src/data/recipes.ts
+  thai.json, spanish.json          # (16 + 16 + 21 + 21 recipes)
+  generate-recipes.mjs             # validates + regenerates src/data/recipes.ts
+test/
+  shopping-state.test.ts           # node:test suite run through tsx
 ```
+
+The shopping list is stored under the `localStorage` key `recipeweb.shoppingList.v1` as `{ recipeSlugs, checked, quantities }` (`src/store/ShoppingListContext.tsx:32`). Every load goes through `normalizeShoppingState` (`src/store/shoppingState.ts:8-25`), which drops unknown slugs, duplicate slugs, non-boolean checks, and quantity overrides longer than 100 characters or pointing at an ingredient index that no longer exists. Ingredient checks and overrides are keyed by `slug:index` — the ingredient's **position** in its recipe — so reordering a recipe's ingredients in the JSON would move existing checks onto different items (see `docs/IMPROVE.md` §1).
+
+## Known issues
+
+- Quantity overrides are shown on the shopping-list page but **not** on the recipe page, whose checklist and "Copy ingredient list" button use the source quantities (`src/pages/RecipePage.tsx:75-80`, `:116`).
+- `useCopy` shows "Copied!" even if both the Clipboard API and the `execCommand` fallback fail; the fallback's boolean result is ignored (`src/hooks/useCopy.ts:14-25`).
+- `new URL(recipe.sourceUrl)` (`src/pages/RecipePage.tsx:29`) throws on a malformed URL, and the generator only checks that `sourceUrl` is non-empty (`scripts/generate-recipes.mjs:17-19`).
+- Two open tabs do not see each other's changes (no `storage` event listener); the last tab to write wins.
+- Internal store actions (`toggleChecked`, `addRecipe`, …) do not run the normalizer, so an invalid key written at runtime is persisted and only dropped on the next load.
 
 ## Adding recipes
 

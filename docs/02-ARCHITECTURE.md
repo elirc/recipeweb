@@ -131,18 +131,30 @@ fix (splitting state and actions into separate contexts).
 
 ## Decision 5: localStorage for persistence
 
-**What we do:** the entire shopping list state serializes to one
-localStorage key, `recipeweb.shoppingList.v1`.
+**What we do:** the entire shopping list state —
+`{ recipeSlugs, checked, quantities }` — serializes to one localStorage key,
+`recipeweb.shoppingList.v1` (`src/store/ShoppingListContext.tsx:32`).
+`quantities` (per-ingredient override strings) was added later without
+bumping the key; the normalizer treats a missing field as "no overrides", so
+older stored documents still load.
 
 **Why:** no accounts, no server — the user's own browser is the only place
 to remember things. localStorage is synchronous, ~5MB, survives restarts.
 
-**Details worth studying in `loadState()`:**
+**Details worth studying in `loadState()` (`ShoppingListContext.tsx:34-38`):**
 - It's wrapped in `try/catch` — localStorage can throw (private browsing,
   disabled storage) and stored JSON can be corrupted. Defensive reads of
   external data are a habit, not an optimization.
-- It **filters out slugs that no longer exist in RECIPES** — if a recipe is
-  ever removed from the data, stale entries don't crash the app.
+- It delegates to the pure function `normalizeShoppingState`
+  (`src/store/shoppingState.ts:8-25`), which **filters out slugs that no
+  longer exist in RECIPES**, de-duplicates slugs, and keeps a `checked` or
+  `quantities` entry only if its `slug:index` key points at a real
+  ingredient of a listed recipe and its value has the right type (overrides
+  are capped at 100 characters). Because it is pure and takes `recipes` as a
+  parameter, `test/shopping-state.test.ts` can test it without React.
+- Writes happen in an effect (`:46-53`); a failed write sets
+  `storageError`, which the shopping-list page shows as an alert
+  (`ShoppingListPage.tsx:45`) while the in-memory list keeps working.
 - The key ends in `.v1` — if the shape of the stored data ever changes,
   bump to `.v2` and old data is simply ignored instead of half-parsed.
   (A migration function would be kinder; see IMPROVE.md #9.)

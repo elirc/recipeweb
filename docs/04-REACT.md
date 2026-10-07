@@ -161,16 +161,25 @@ Three details in that file are *senior* details:
    loud, fail near the mistake.**
 3. **Persistence as an effect:**
    ```ts
+   // src/store/ShoppingListContext.tsx:46-53
    useEffect(() => {
-     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-     catch { /* storage unavailable — keep in memory only */ }
+     try {
+       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+       setStorageError(false);
+     } catch {
+       setStorageError(true); // Keep the current session usable; disclose persistence failure.
+     }
    }, [state]);
    ```
    `useEffect` runs *after* render, for side effects — things that touch
    the world outside React (storage, network, timers, DOM APIs). The
    `[state]` dependency array means "run this whenever `state` changes."
    Note the failure posture: if storage is unavailable, the app degrades
-   gracefully instead of crashing.
+   gracefully instead of crashing — and, unlike a silent `catch {}`, it
+   *tells* the user: `storageError` drives the alert at
+   `ShoppingListPage.tsx:45`. One quirk to spot: the effect also runs on
+   mount, so the first render immediately writes the normalized state back,
+   which is how a corrupted stored document gets cleaned up.
 
 ## 6. `useCallback` / `useMemo` — referential identity
 

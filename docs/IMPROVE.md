@@ -47,7 +47,14 @@ recipe someone has saved. Exercise 3.1 in 05-EXERCISES.md is fixing this.
 
 ## 2. 🔴 No tests, and no test infrastructure
 
-Zero test files, no test runner installed, no `npm test` script. The
+> **Status update:** partially addressed since this review was written.
+> There is now one test file, `test/shopping-state.test.ts` (4 `node:test`
+> cases run through `tsx` by `npm test`), covering only the storage
+> normalizer in `src/store/shoppingState.ts`. Everything listed below as
+> untested other than "`loadState` survives garbage" is still untested, and
+> there is no component-test setup. The original assessment follows.
+
+At the time of this review: zero test files, no test runner installed, no `npm test` script. The
 project relies on two safety nets — the TypeScript compiler and the
 generator's validation — which are genuinely good but only cover *shape*,
 not *behavior*. Nothing verifies that search matches tags, that
@@ -176,6 +183,13 @@ A `migrate(raw: unknown): State` function — even one that just handles
 v1→current — should have existed from the start, because (see #1) a schema
 change is not hypothetical. Persisted data is an API you have with your
 past self; version *and* migrate it.
+
+> **Status update:** `normalizeShoppingState` (`src/store/shoppingState.ts:8-25`)
+> is now that function for the one change made so far — the `quantities`
+> field was added without bumping the key, and documents written before it
+> existed load with no overrides (test 1 in `test/shopping-state.test.ts`).
+> There is still no explicit version field inside the stored document, so a
+> future *incompatible* change would still have to be inferred from shape.
 
 ## 10. 🟢 Assorted craft issues
 

@@ -6,7 +6,7 @@ screen.
 
 ## 1. Get it running
 
-You need [Node.js](https://nodejs.org) 20 or newer (`node --version` to check).
+You need [Node.js](https://nodejs.org) (`node --version` to check). Use Node 22: it is what the deploy workflow installs (`.github/workflows/deploy.yml`), and `npm test` relies on Node's own test runner expanding the `test/*.test.ts` glob, which older Node versions do not do.
 
 ```bash
 npm install     # downloads dependencies into node_modules/ (one time)
@@ -23,6 +23,7 @@ Other commands you'll use:
 npm run build     # type-checks everything, then produces dist/ for deployment
 npm run preview   # serves the production build locally (http://localhost:4173)
 npm run lint      # runs oxlint, a fast linter that catches common mistakes
+npm test          # runs test/shopping-state.test.ts with node:test via tsx
 node scripts/generate-recipes.mjs   # regenerates recipe data (explained below)
 ```
 
@@ -60,7 +61,8 @@ recipeweb/
     ├── types.ts                ← the data shapes (Recipe, Ingredient, Cuisine…)
     ├── data/recipes.ts         ← GENERATED. 74 recipes as TypeScript. Never edit by hand.
     ├── store/
-    │   └── ShoppingListContext.tsx  ← shopping list state + localStorage persistence
+    │   ├── ShoppingListContext.tsx  ← shopping list state + localStorage persistence
+    │   └── shoppingState.ts         ← pure normalizer for stored state + quantity overrides
     ├── hooks/
     │   └── useCopy.ts          ← reusable "copy to clipboard" logic
     ├── components/
@@ -70,9 +72,12 @@ recipeweb/
         ├── HomePage.tsx        ← browse / search / filter
         ├── RecipePage.tsx      ← one recipe's detail view
         └── ShoppingListPage.tsx← the combined shopping list
+
+test/
+└── shopping-state.test.ts      ← 4 node:test cases for src/store/shoppingState.ts
 ```
 
-Ten source files. You can read all of them in an afternoon. Do that — this
+Eleven hand-written source files (plus the generated `data/recipes.ts`) and one test file. You can read all of them in an afternoon. Do that — this
 doc tells you what to look for in each.
 
 ## 3. Trace the data: from JSON to pixel

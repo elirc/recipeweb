@@ -4,6 +4,8 @@
 **Project:** `recipeweb` — "Sarap & Ngon" Filipino/Vietnamese cookbook companion (Vite + React 19 + TypeScript)
 **Goal:** Extend the cookbook from 2 cuisines (32 recipes) to 4 cuisines (~64 recipes) by adding Thai and Spanish sections, keeping the existing architecture intact.
 
+> **Status: implemented.** This is the historical hand-off plan. The shipped data has 74 recipes: 16 Filipino, 16 Vietnamese, 21 Thai, 21 Spanish (`scripts/*.json`), so both new cuisines ended up larger than the ~16 planned. `Cuisine` in `src/types.ts:1` now lists all four, and the header subtitle reads "Filipino · Vietnamese · Thai · Spanish" (`src/App.tsx:16`). Read the rest of this file as a planning example, not as a description of the current code.
+
 ---
 
 ## Context: how the app works today
